@@ -374,6 +374,7 @@ process_event_details = (
         df=extract_reported_by_subtype,
         client=er_client_name,
         map_to_titles=True,
+        ordered=True,
         **process_event_details_params,
     )
     .call()
@@ -448,6 +449,40 @@ drop_event_details_prefix = (
 
 
 # %% [markdown]
+# ## Events Colormap
+
+# %%
+# parameters
+
+events_colormap_params = dict()
+
+# %%
+# call the task
+
+
+events_colormap = (
+    apply_color_map.set_task_instance_id("events_colormap")
+    .handle_errors()
+    .with_tracing()
+    .skipif(
+        conditions=[
+            any_is_empty_df,
+            any_dependency_skipped,
+        ],
+        unpack_depth=1,
+    )
+    .partial(
+        input_column_name="event_type",
+        colormap="tab20b",
+        output_column_name="event_type_colormap",
+        df=drop_event_details_prefix,
+        **events_colormap_params,
+    )
+    .call()
+)
+
+
+# %% [markdown]
 # ## Filter Event Relocations
 
 # %%
@@ -474,7 +509,7 @@ filter_events = (
         unpack_depth=1,
     )
     .partial(
-        df=drop_event_details_prefix,
+        df=events_colormap,
         roi_gdf=None,
         roi_name=None,
         reset_index=True,
@@ -778,39 +813,6 @@ skip_map_generation = (
 
 
 # %% [markdown]
-# ## Events Colormap
-
-# %%
-# parameters
-
-events_colormap_params = dict()
-
-# %%
-# call the task
-
-
-events_colormap = (
-    apply_color_map.set_task_instance_id("events_colormap")
-    .handle_errors()
-    .with_tracing()
-    .skipif(
-        conditions=[
-            any_is_empty_df,
-            any_dependency_skipped,
-        ],
-        unpack_depth=1,
-    )
-    .partial(
-        input_column_name="event_type",
-        colormap="tab20b",
-        output_column_name="event_type_colormap",
-        **events_colormap_params,
-    )
-    .mapvalues(argnames=["df"], argvalues=skip_map_generation)
-)
-
-
-# %% [markdown]
 # ## Rename columns for map tooltip display
 
 # %%
@@ -845,7 +847,7 @@ rename_display_columns = (
         raise_if_not_found=True,
         **rename_display_columns_params,
     )
-    .mapvalues(argnames=["df"], argvalues=events_colormap)
+    .mapvalues(argnames=["df"], argvalues=skip_map_generation)
 )
 
 

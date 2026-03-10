@@ -252,6 +252,7 @@ def main(params: Params):
             df=extract_reported_by_subtype,
             client=er_client_name,
             map_to_titles=True,
+            ordered=True,
             **(params_dict.get("process_event_details") or {}),
         )
         .call()
@@ -300,6 +301,28 @@ def main(params: Params):
         .call()
     )
 
+    events_colormap = (
+        apply_color_map.validate()
+        .set_task_instance_id("events_colormap")
+        .handle_errors()
+        .with_tracing()
+        .skipif(
+            conditions=[
+                any_is_empty_df,
+                any_dependency_skipped,
+            ],
+            unpack_depth=1,
+        )
+        .partial(
+            input_column_name="event_type",
+            colormap="tab20b",
+            output_column_name="event_type_colormap",
+            df=drop_event_details_prefix,
+            **(params_dict.get("events_colormap") or {}),
+        )
+        .call()
+    )
+
     filter_events = (
         apply_reloc_coord_filter.validate()
         .set_task_instance_id("filter_events")
@@ -313,7 +336,7 @@ def main(params: Params):
             unpack_depth=1,
         )
         .partial(
-            df=drop_event_details_prefix,
+            df=events_colormap,
             roi_gdf=None,
             roi_name=None,
             reset_index=True,
@@ -496,27 +519,6 @@ def main(params: Params):
         .mapvalues(argnames=["df"], argvalues=split_event_groups)
     )
 
-    events_colormap = (
-        apply_color_map.validate()
-        .set_task_instance_id("events_colormap")
-        .handle_errors()
-        .with_tracing()
-        .skipif(
-            conditions=[
-                any_is_empty_df,
-                any_dependency_skipped,
-            ],
-            unpack_depth=1,
-        )
-        .partial(
-            input_column_name="event_type",
-            colormap="tab20b",
-            output_column_name="event_type_colormap",
-            **(params_dict.get("events_colormap") or {}),
-        )
-        .mapvalues(argnames=["df"], argvalues=skip_map_generation)
-    )
-
     rename_display_columns = (
         map_columns.validate()
         .set_task_instance_id("rename_display_columns")
@@ -541,7 +543,7 @@ def main(params: Params):
             raise_if_not_found=True,
             **(params_dict.get("rename_display_columns") or {}),
         )
-        .mapvalues(argnames=["df"], argvalues=events_colormap)
+        .mapvalues(argnames=["df"], argvalues=skip_map_generation)
     )
 
     set_events_map_title = (

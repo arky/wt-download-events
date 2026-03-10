@@ -226,13 +226,12 @@
       "properties": {
         "filetypes": {
           "default": [
-            "geoparquet"
+            "parquet"
           ],
           "items": {
             "enum": [
               "csv",
-              "gpkg",
-              "geoparquet"
+              "parquet"
             ],
             "type": "string"
           },
