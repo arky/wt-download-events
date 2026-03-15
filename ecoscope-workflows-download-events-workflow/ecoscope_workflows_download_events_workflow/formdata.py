@@ -7,7 +7,7 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, confloat, constr
+from pydantic import BaseModel, ConfigDict, Field, confloat, constr
 
 
 class WorkflowDetails(BaseModel):
@@ -24,7 +24,7 @@ class GetEventData(BaseModel):
     )
     event_types: List[str] = Field(
         ...,
-        description="Specify the event type(s) to analyze (optional). Leave this section empty to analyze all event types.",
+        description='Specify the event type(s) to analyze (optional). Enter the "Event Types" value for each event type you want to include in the output — one per field (e.g. "wildlife_sighting_rep"). If you are on Ecoscope Desktop, "Event Type" values can be found in your EarthRanger Admin site under Activity → Event Types. Leave this section empty to include all event types',
         title="Event Types",
     )
     include_null_geometry: Optional[bool] = Field(
@@ -331,12 +331,8 @@ class TemporalGrouper(BaseModel):
     temporal_index: str = Field(..., title="Time")
 
 
-class ValueGrouper(RootModel[str]):
-    root: str = Field(
-        ...,
-        description="Use a categorical column to group data by. If you're unsure which columns are available, run the workflow once without grouping to see the data, then configure grouping in a subsequent run.",
-        title="Category",
-    )
+class ValueGrouper(BaseModel):
+    index_name: Optional[str] = Field(None, title="Index Name")
 
 
 class TimeRange(BaseModel):
